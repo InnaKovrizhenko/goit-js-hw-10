@@ -9,11 +9,12 @@ const searchBox = document.querySelector('#search-box');
 const countryList = document.querySelector('.country-list');
 const countryInfo = document.querySelector('.country-info');
 
-function answerNoCountryName() {
-  Notify.failure('Oops, there is no country with that name');
-}
 function answerManyMatches() {
   Notify.info('Too many matches found. Please enter a more specific name.');
+}
+
+function answerNoCountryName() {
+  Notify.failure('Oops, there is no country with that name');
 }
 
 searchBox.addEventListener('input', debounce(onSearchInput, DEBOUNCE_DELAY));
