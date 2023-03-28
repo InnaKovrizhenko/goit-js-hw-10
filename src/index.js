@@ -1,73 +1,71 @@
 import './css/styles.css';
 import { fetchCountries } from './fetchCountries';
 import debounce from 'lodash.debounce';
-import Notiflix from 'notiflix';
-
+import { Notify } from 'notiflix/build/notiflix-notify-aio';
 
 const DEBOUNCE_DELAY = 300;
 
-const refs = {
-  searchBox: document.querySelector('#search-box'),
-  countryList: document.querySelector('.country-list'),
-  countryInfo: document.querySelector('.country-info')
-};
-​
-refs.searchBox.addEventListener('input', debounce(onSearch, DEBOUNCE_DELAY));
-​
-function onSearch(e) {
-  e.preventDefault();
-  const countryName = e.target.value.trim();
+const searchBox = document.querySelector('#search-box');
+const countryList = document.querySelector('.country-list');
+const countryInfo = document.querySelector('.country-info');
+
+function answerNoCountryName() {
+  Notify.failure('Oops, there is no country with that name');
+}
+function answerManyMatches() {
+  Notify.info('Too many matches found. Please enter a more specific name.');
+}
+
+searchBox.addEventListener('input', debounce(onSearchInput, DEBOUNCE_DELAY));
+
+function onSearchInput(event) {
+  event.preventDefault();
+  const countryName = event.target.value.trim();
   if (!countryName) {
-    clearCountryList();
-    clearCountryInfo();
+    countryList.innerHTML = '';
+    countryInfo.innerHTML = '';
     return;
   }
+
   fetchCountries(countryName)
-    .then(renderCountries)
+    .then(data => {
+      console.log(data);
+      sortCountries(data);
+    })
     .catch(error => {
-      alertNoName(error);
+      answerNoCountryName(error);
     });
 }
-​
-function renderCountries(countries) {
+
+function sortCountries(countries) {
   if (countries.length > 10) {
-    alertMatches()
+    answerManyMatches();
     return;
-  };
-​
-  if (countries.length > 1 && countries.length <= 10) {
-    const markupList = countries.map(({ name, flags }) => {
-      return `<li><img src="${flags.svg}" alt="${flags.alt}" width="50">${name.official}</li>`;
-    })
+  } else if (countries.length >= 2 && countries.length <= 10) {
+    countryInfo.innerHTML = '';
+    const markupList = countries
+      .map(country => {
+        return `<li><img src="${country.flags.svg}" alt="${country.flags.alt}" width="50" height="50">${country.name.official}</li>`;
+      })
       .join('');
-    refs.countryList.insertAdjacentHTML('beforeend', markupList)
-  };
-​
-  if (countries.length === 1) {
-    clearCountryList();
-    const markupInfo = countries.map(({ name, capital, population, flags, languages }) => {
-      return `<img src="${flags.svg}" alt="${name.official}" width='70'>
-        <h1 class="country-item-name">${name.official}</h1>
-        <p class="country-item-info">Capital: ${capital}</p>
-        <p class="country-item-info">Population: ${population}</p>
-        <p class="country-item-info">Languages: ${Object.values(languages)} </p>`})
-    .join();
-    refs.countryInfo.insertAdjacentHTML('beforeend', markupInfo);
-  };
-}
-​
-function clearCountryList() {
-  refs.countryList.innerHTML = '';
-}
-​
-function clearCountryInfo() {
-  refs.countryInfo.innerHTML = '';
-}
-​
-function alertNoName() {
-  Notiflix.Notify.failure('Oops, there is no country with that name');
-}
-​
-function alertMatches() {
-  Notiflix.Notify.info('Too many matches found. Please enter a more specific name.');
+
+    countryList.insertAdjacentHTML('beforeend', markupList);
+  } else if (countries.length === 1) {
+    countryList.innerHTML = '';
+    countryInfo.innerHTML = '';
+    const markupInfo = countries
+      .map(country => {
+        return `<img src="${country.flags.svg}" alt="${
+          country.name.official
+        }" width="50" height="50">
+        <h1 class="country-item-name">${country.name.official}</h1>
+        <p class="country-item-info">Capital: ${country.capital}</p>
+        <p class="country-item-info">Population: ${country.population}</p>
+        <p class="country-item-info">Languages: ${Object.values(
+          country.languages
+        )} </p>`;
+      })
+      .join();
+    countryInfo.insertAdjacentHTML('beforeend', markupInfo);
+  }
 }
